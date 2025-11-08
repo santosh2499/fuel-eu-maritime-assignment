@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  imoNumber String   @unique
+  ships     Ship[]
+  createdAt DateTime @default(now())
+}
+
+
+
+
+model Ship {
+  id            String           @id @default(cuid())
+  name          String
+  company       Company?         @relation(fields: [companyId], references: [id])
+  companyId     String?
+  routes        Route[]
+  compliances   ShipCompliance[]
+  bankEntries   BankEntry[]
+  createdAt     DateTime         @default(now())
+}
+
+
+
+
+
+
+
+
+// ROUTE MODEL
+// ---------------------------
+model Route {
+  id            String   @id @default(cuid())
+  routeCode     String   @unique
+  distanceKm    Float
+  fuelType      String
+  ghgIntensity  Float
+  fuelConsumed  Float
+  baseline      Boolean  @default(false)
+  shipId        String?  // <-- MUST EXIST
+  ship          Ship?    @relation(fields: [shipId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+
+
+
+
+// SHIP COMPLIANCE MODEL
+// ---------------------------
+model ShipCompliance {
+  id               String   @id @default(cuid())
+  shipId           String
+  ship             Ship     @relation(fields: [shipId], references: [id])
+  year             Int
+  cb_gco2eq        Float
+  cb_before        Float?
+  cb_after         Float?
+  createdAt        DateTime @default(now())
+}
+
+
+
+
+// BANK ENTRY MODEL
+// ---------------------------
+model BankEntry {
+  id          String   @id @default(cuid())
+  shipId      String
+  ship        Ship     @relation(fields: [shipId], references: [id])
+  year        Int
+  amount      Float
+  applied     Float    @default(0)
+  createdAt   DateTime @default(now())
+}
