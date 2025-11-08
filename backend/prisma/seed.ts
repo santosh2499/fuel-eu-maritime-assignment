@@ -1,53 +1,75 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
+
 const prisma = new PrismaClient();
 
 async function main() {
-  // --- Clear old data first (safe reset) ---
-  await prisma.route.deleteMany();
+  const routes = [
+    {
+      routeId: 'R001',
+      vesselType: 'Container',
+      fuelType: 'HFO',
+      year: 2024,
+      ghgIntensity: 91.0,
+      fuelConsumption: 5000,
+      distanceKm: 12000,
+      totalEmissions: 4500,
+      isBaseline: true,  // baseline route
+    },
+    {
+      routeId: 'R002',
+      vesselType: 'BulkCarrier',
+      fuelType: 'LNG',
+      year: 2024,
+      ghgIntensity: 88.0,
+      fuelConsumption: 4800,
+      distanceKm: 11500,
+      totalEmissions: 4200,
+      isBaseline: false,
+    },
+    {
+      routeId: 'R003',
+      vesselType: 'Tanker',
+      fuelType: 'MGO',
+      year: 2024,
+      ghgIntensity: 93.5,
+      fuelConsumption: 5100,
+      distanceKm: 12500,
+      totalEmissions: 4700,
+      isBaseline: false,
+    },
+    {
+      routeId: 'R004',
+      vesselType: 'RoRo',
+      fuelType: 'HFO',
+      year: 2025,
+      ghgIntensity: 89.2,
+      fuelConsumption: 4900,
+      distanceKm: 11800,
+      totalEmissions: 4300,
+      isBaseline: false,
+    },
+    {
+      routeId: 'R005',
+      vesselType: 'Container',
+      fuelType: 'LNG',
+      year: 2025,
+      ghgIntensity: 90.5,
+      fuelConsumption: 4950,
+      distanceKm: 11900,
+      totalEmissions: 4400,
+      isBaseline: false,
+    },
+  ];
 
-  // --- Seed routes ---
-  await prisma.route.createMany({
-    data: [
-      {
-        routeCode: "R001",
-        fuelType: "HFO",
-        distanceKm: 12000,
-        ghgIntensity: 91.0,
-        fuelConsumed: 5000,
-        baseline: true,
-      },
-      {
-        routeCode: "R002",
-        fuelType: "LNG",
-        distanceKm: 11500,
-        ghgIntensity: 88.0,
-        fuelConsumed: 4800,
-      },
-      {
-        routeCode: "R003",
-        fuelType: "MGO",
-        distanceKm: 12500,
-        ghgIntensity: 93.5,
-        fuelConsumed: 5100,
-      },
-      {
-        routeCode: "R004",
-        fuelType: "HFO",
-        distanceKm: 11800,
-        ghgIntensity: 89.2,
-        fuelConsumed: 4900,
-      },
-      {
-        routeCode: "R005",
-        fuelType: "LNG",
-        distanceKm: 11900,
-        ghgIntensity: 90.5,
-        fuelConsumed: 4950,
-      },
-    ],
-  });
+  for (const route of routes) {
+    await prisma.route.upsert({
+      where: { routeId: route.routeId },
+      update: route,
+      create: route,
+    });
+  }
 
-  console.log("✅ Routes seeded successfully");
+  console.log('Seeded 5 KPI routes successfully.');
 }
 
 main()

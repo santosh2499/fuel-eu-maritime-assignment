@@ -1,21 +1,23 @@
-import express from "express";
-import routesRouter from "../../adapters/inbound/http/routes";
-import complianceRouter from "../../adapters/inbound/http/compliance";
-import bankingRouter from "../../adapters/inbound/http/banking";
-import poolsRouter from "../../adapters/inbound/http/pools";
+// src/infrastructure/server/app.ts
+import express, { Request, Response, NextFunction } from 'express';
+import { getAllRoutes, setBaseline, getComparison } from '../../adapters/inbound/http/routesController';
 
 const app = express();
 app.use(express.json());
 
-// Add routes endpoints
-app.use("/routes", routesRouter);
+// Routes
+app.get('/routes', getAllRoutes);
+app.post('/routes/:id/baseline', setBaseline);
+app.get('/routes/comparison', getComparison);
 
-// Add compliance endpoints
-app.use("/compliance", complianceRouter);
-
-app.use("/banking", bankingRouter);
-
-// Existing app.use calls...
-app.use("/pools", poolsRouter);
+// Global error handler
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  console.error(err);
+  if (err instanceof Error) {
+    res.status(500).json({ message: err.message });
+  } else {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 export default app;

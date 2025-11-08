@@ -1,89 +1,88 @@
-generator client {
-  provider = "prisma-client-js"
-}
+// prisma/schema.prisma
 
-
-
+// ====================
+// Datasource
+// ====================
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// ====================
+// Generator
+// ====================
+generator client {
+  provider = "prisma-client-js"
+}
 
-
+// ====================
+// Existing Models
+// ====================
 
 model Company {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  imoNumber String   @unique
   ships     Ship[]
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 }
-
-
-
 
 model Ship {
-  id            String           @id @default(cuid())
-  name          String
-  company       Company?         @relation(fields: [companyId], references: [id])
-  companyId     String?
-  routes        Route[]
-  compliances   ShipCompliance[]
-  bankEntries   BankEntry[]
-  createdAt     DateTime         @default(now())
+  id        String           @id @default(cuid())
+  name      String
+  company   Company?         @relation(fields: [companyId], references: [id])
+  companyId String?
+  pools     PoolMember[]
+  createdAt DateTime         @default(now())
 }
 
+// Example Pool & PoolMember models (if already exist)
+model Pool {
+  id         String       @id @default(cuid())
+  year       Int
+  createdAt  DateTime     @default(now())
+  members    PoolMember[]
+}
 
+model PoolMember {
+  id        String    @id @default(cuid())
+  pool      Pool?     @relation(fields: [poolId], references: [id])
+  poolId    String?
+  ship      Ship?     @relation(fields: [shipId], references: [id])
+  shipId    String?
+  cbBefore  Float
+  cbAfter   Float
+}
 
+// ====================
+// New Models for FuelEU
+// ====================
 
-
-
-
-
-// ROUTE MODEL
-// ---------------------------
 model Route {
-  id            String   @id @default(cuid())
-  routeCode     String   @unique
-  distanceKm    Float
-  fuelType      String
-  ghgIntensity  Float
-  fuelConsumed  Float
-  baseline      Boolean  @default(false)
-  shipId        String?  // <-- MUST EXIST
-  ship          Ship?    @relation(fields: [shipId], references: [id])
-  createdAt     DateTime @default(now())
-}
-
-
-
-
-
-// SHIP COMPLIANCE MODEL
-// ---------------------------
-model ShipCompliance {
   id               String   @id @default(cuid())
-  shipId           String
-  ship             Ship     @relation(fields: [shipId], references: [id])
+  routeId          String   @unique
+  vesselType       String
+  fuelType         String
   year             Int
-  cb_gco2eq        Float
-  cb_before        Float?
-  cb_after         Float?
-  createdAt        DateTime @default(now())
+  ghgIntensity     Float    // gCO2e/MJ
+  fuelConsumption  Float    // t
+  distanceKm       Float
+  totalEmissions   Float
+  isBaseline       Boolean  @default(false)
 }
 
+model ShipCompliance {
+  id         String   @id @default(cuid())
+  shipId     String
+  year       Int
+  cb_gco2eq  Float
+  createdAt  DateTime @default(now())
+}
 
-
-
-// BANK ENTRY MODEL
-// ---------------------------
 model BankEntry {
-  id          String   @id @default(cuid())
-  shipId      String
-  ship        Ship     @relation(fields: [shipId], references: [id])
-  year        Int
-  amount      Float
-  applied     Float    @default(0)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  shipId        String
+  year          Int
+  amount_gco2eq Float
+  type          String   // "BANK" or "APPLY"
+  createdAt     DateTime @default(now())
 }

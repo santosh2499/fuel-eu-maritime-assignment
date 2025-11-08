@@ -1,18 +1,10 @@
-import express from 'express';
-import cors from 'cors';
+import express from "express";
+import routesRouter from "./adapters/inbound/http/routesController";
 
 const app = express();
-const PORT = process.env.PORT || 4000;
-
-app.use(cors());
 app.use(express.json());
 
-// ✅ Root route (for Postman test)
-app.get('/', (req, res) => {
-  res.status(200).json({ message: '🚀 FuelEU Maritime Backend Running Successfully!' });
-});
+// Mount routes
+app.use("/routes", routesRouter);
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
-});
+export default app;

@@ -1,66 +1,88 @@
-import prisma from "../../infrastructure/db/prisma";
-import { calculateCompliance } from "../domain/services";
+// src/core/application/companyServicePrisma.ts
 
-export class CompanyServicePrisma {
-  async registerCompany(name: string) {
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export class CompanyService {
+  /**
+   * Create a new company
+   */
+  async createCompany(name: string, imoNumber: string) {
     return await prisma.company.create({
-      data: { name },
-    });
-  }
-
-  async getAllCompanies() {
-    return await prisma.company.findMany({
-      include: { ships: true },
-    });
-  }
-
-  async addShip(companyId: string, data: { name: string; fuelType: string; emissionRate: number; }) {
-    const complianceScore = calculateCompliance({
-      id: "",
-      name: data.name,
-      fuelType: data.fuelType as any,
-      emissionRate: data.emissionRate,
-      complianceScore: 0,
-    });
-
-    return await prisma.ship.create({
-      data: {
-        ...data,
-        complianceScore,
-        companyId,
-      },
-    });
-  }
-
-  async transferFuelCredits(fromId: string, toId: string, amount: number) {
-    const from = await prisma.company.findUnique({ where: { id: fromId } });
-    const to = await prisma.company.findUnique({ where: { id: toId } });
-    if (!from || !to || from.fuelCredits < amount) return false;
-
-    await prisma.$transaction([
-      prisma.company.update({ where: { id: fromId }, data: { fuelCredits: { decrement: amount } } }),
-      prisma.company.update({ where: { id: toId }, data: { fuelCredits: { increment: amount } } }),
-    ]);
-    return true;
-  }
-
-  async createFuelPool(name: string, memberIds: string[]) {
-    const companies = await prisma.company.findMany({ where: { id: { in: memberIds } } });
-    const totalCredits = companies.reduce((sum, c) => sum + c.fuelCredits, 0);
-
-    const pool = await prisma.pool.create({
       data: {
         name,
-        totalCredits,
-        members: {
-          create: companies.map(c => ({ companyId: c.id })),
-        },
+        imoNumber, // required now
       },
-      include: { members: true },
     });
+  }
 
-    return pool;
+  /**
+   * Create a new ship for a company
+   */
+  async createShip(companyId: string, shipName: string) {
+    return await prisma.ship.create({
+      data: {
+        name: shipName,
+        companyId,
+        // Removed complianceScore
+      },
+    });
+  }
+
+  /**
+   * Get company with ships
+   */
+  async getCompany(companyId: string) {
+    return await prisma.company.findUnique({
+      where: { id: companyId },
+      include: {
+        ships: true, // relations included
+      },
+    });
+  }
+
+  /**
+   * Update company name
+   */
+  async updateCompanyName(companyId: string, name: string) {
+    return await prisma.company.update({
+      where: { id: companyId },
+      data: { name }, // Removed fuelCredits
+    });
+  }
+
+  /**
+   * Create a pool for a given year
+   */
+  async createPool(year: number) {
+    return await prisma.pool.create({
+      data: { year },
+    });
+  }
+
+  /**
+   * Get all pools
+   */
+  async getAllPools() {
+    return await prisma.pool.findMany({
+      include: { poolMembers: true }, // include members
+    });
+  }
+
+  /**
+   * Add ship to a pool
+   */
+  async addShipToPool(poolId: string, shipId: string, cbBefore: number, cbAfter: number) {
+    return await prisma.poolMember.create({
+      data: {
+        poolId,
+        shipId,
+        cbBefore,
+        cbAfter,
+      },
+    });
   }
 }
 
-export const companyServicePrisma = new CompanyServicePrisma();
+export const companyService = new CompanyService();
